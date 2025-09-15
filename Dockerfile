@@ -11,10 +11,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --only=production
 
-# Rebuild the source code only when needed
+# Install all dependencies for building (including dev dependencies)
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* ./
+RUN npm ci
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
