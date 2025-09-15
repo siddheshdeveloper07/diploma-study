@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MCQQuestion, acidBaseMCQQuestions } from "@/data/mcqQuestions";
 
 interface UploadedQuestionSet {
@@ -38,14 +38,14 @@ export default function MCQTest() {
   const currentQuestion = questions[currentQuestionIndex];
 
   // Function to shuffle array and select random questions
-  const shuffleAndSelectQuestions = (count: number) => {
+  const shuffleAndSelectQuestions = useCallback((count: number) => {
     const questionPool = selectedQuestionSet === 'default' 
       ? acidBaseMCQQuestions 
       : uploadedQuestionSets.find(set => set.id === selectedQuestionSet)?.questions || acidBaseMCQQuestions;
     
     const shuffled = [...questionPool].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
-  };
+  }, [selectedQuestionSet, uploadedQuestionSets]);
 
   // Function to handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
