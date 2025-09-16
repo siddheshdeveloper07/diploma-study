@@ -1,0 +1,70 @@
+# Alternative optimized Dockerfile
+# This version is more efficient and handles TypeScript properly
+
+# Use the official Node.js 18 image as base
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Install all dependencies (including dev dependencies) for building
+FROM base AS builder
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install all dependencies including dev dependencies needed for build
+RUN npm ci && npm cache clean --force
+
+# Copy source code
+COPY . .
+
+# Set environment variables
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Build the application
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Create uploads directory with proper permissions
+RUN mkdir -p /app/public/uploads && chown nextjs:nodejs /app/public/uploads
+
+# Copy built application
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Start the application
+CMD ["node", "server.js"]
