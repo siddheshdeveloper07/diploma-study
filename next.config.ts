@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
       },
       // Allow PDF files to be embedded in iframes
       {
-        source: '/uploads/(.*)',
+        source: '/api/uploads/(.*)',
         headers: [
           {
             key: 'X-Frame-Options',

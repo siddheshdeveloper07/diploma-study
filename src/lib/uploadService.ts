@@ -180,7 +180,7 @@ export class UploadService {
             originalName: name,
             size: stat.size,
             uploadedAt: stat.mtime.toISOString(),
-            url: `/uploads/${encodeURIComponent(name)}`,
+            url: `/api/uploads/${encodeURIComponent(name)}`,
           };
         })
       );
