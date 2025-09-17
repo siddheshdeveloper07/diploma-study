@@ -40,6 +40,12 @@ Your **Diploma Study Platform** is now ready for Google Cloud deployment! Here's
 - Security best practices
 - Cost optimization tips
 
+### 7. **Cloud File Storage Ready** ✅
+- Implemented Cloudinary integration for production file storage
+- Added automatic fallback to local storage for development
+- Created file management features (upload, rename, delete)
+- Files work seamlessly in both local and cloud environments
+
 ## 📋 What You Need to Do Next
 
 ### 1. **Set Up Google Cloud** (15 minutes)
@@ -50,12 +56,20 @@ Your **Diploma Study Platform** is now ready for Google Cloud deployment! Here's
    - Cloud Build API
    - Container Registry API
 
-### 2. **Connect GitHub Repository** (10 minutes)
+### 2. **Set Up Cloud Storage (Recommended for Production)** (10 minutes)
+1. Create free Cloudinary account at https://cloudinary.com
+2. Get your Cloud Name, API Key, and API Secret from dashboard
+3. Add these as environment variables in your hosting platform:
+   - `CLOUDINARY_CLOUD_NAME`
+   - `CLOUDINARY_API_KEY` 
+   - `CLOUDINARY_API_SECRET`
+
+### 3. **Connect GitHub Repository** (10 minutes)
 1. Push your code to GitHub (if not already done)
 2. Connect repository to Cloud Build
 3. Create build trigger for `main` branch
 
-### 3. **Deploy** (5 minutes)
+### 4. **Deploy** (5 minutes)
 1. Push to main branch
 2. Watch automatic deployment in Cloud Build console
 3. Get your live URL from Cloud Run

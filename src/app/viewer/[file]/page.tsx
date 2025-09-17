@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import path from "path";
-import { promises as fs } from "fs";
+import { UploadService } from "@/lib/uploadService";
 
 type Props = {
   params: Promise<{ file: string }>;
@@ -10,16 +9,16 @@ type Props = {
 export default async function PdfViewerPage({ params }: Props) {
   const { file } = await params;
   const decoded = decodeURIComponent(file);
-  const base = path.basename(decoded);
 
-  if (!base.toLowerCase().endsWith(".pdf")) {
+  if (!decoded.toLowerCase().endsWith(".pdf")) {
     notFound();
   }
 
-  const filePath = path.join(process.cwd(), "public", "uploads", base);
-  try {
-    await fs.access(filePath);
-  } catch {
+  // Get file metadata from the upload service
+  const files = await UploadService.getFilesList();
+  const fileMetadata = files.find(f => f.name === decoded);
+  
+  if (!fileMetadata) {
     notFound();
   }
 
@@ -40,7 +39,7 @@ export default async function PdfViewerPage({ params }: Props) {
             <h1 className="text-xl sm:text-2xl font-semibold">PDF Viewer</h1>
           </div>
           <a
-            href={`/uploads/${encodeURIComponent(base)}`}
+            href={fileMetadata.url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
@@ -50,8 +49,8 @@ export default async function PdfViewerPage({ params }: Props) {
         </div>
         <div className="border rounded-lg overflow-hidden bg-white shadow">
           <iframe
-            src={`/uploads/${encodeURIComponent(base)}#toolbar=1`}
-            title={base}
+            src={`${fileMetadata.url}#toolbar=1`}
+            title={fileMetadata.name}
             className="w-full h-[80vh]"
           />
         </div>

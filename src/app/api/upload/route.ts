@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { UploadService } from "@/lib/uploadService";
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
+    const customName = formData.get("customName") as string | undefined;
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -19,33 +19,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Only PDF files are allowed" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await fs.mkdir(uploadsDir, { recursive: true });
+    const fileMetadata = await UploadService.uploadFile(file as File, customName);
 
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, "-")
-      .replace("T", "_")
-      .replace("Z", "");
-
-    const safeBaseName = path
-      .basename(originalName)
-      .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-    const finalName = safeBaseName.toLowerCase().endsWith(".pdf")
-      ? safeBaseName
-      : `${safeBaseName}.pdf`;
-
-    const nameWithTimestamp = `${timestamp}_${finalName}`;
-    const filePath = path.join(uploadsDir, nameWithTimestamp);
-
-    const arrayBuffer = await (file as File).arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    await fs.writeFile(filePath, buffer);
-
-    const urlPath = `/uploads/${encodeURIComponent(nameWithTimestamp)}`;
-    return NextResponse.json({ message: "Uploaded", name: nameWithTimestamp, url: urlPath });
-  } catch {
+    return NextResponse.json({ 
+      message: "Uploaded successfully", 
+      file: fileMetadata 
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

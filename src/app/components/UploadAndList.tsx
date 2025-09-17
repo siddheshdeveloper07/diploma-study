@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type FileItem = {
+  id: string;
   name: string;
+  originalName: string;
   size: number;
-  modifiedAt: string;
+  uploadedAt: string;
   url: string;
+  publicId?: string;
 };
 
 export default function UploadAndList() {
@@ -15,6 +18,8 @@ export default function UploadAndList() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingFile, setEditingFile] = useState<string | null>(null);
+  const [newFileName, setNewFileName] = useState<string>("");
 
   async function refreshFiles() {
     const res = await fetch("/api/files", { cache: "no-store" });
@@ -62,6 +67,73 @@ export default function UploadAndList() {
     } finally {
       setIsUploading(false);
     }
+  }
+
+  async function onRename(fileId: string, currentName: string) {
+    setEditingFile(fileId);
+    setNewFileName(currentName.replace(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}_/, "").replace(".pdf", ""));
+  }
+
+  async function saveRename(fileId: string) {
+    if (!newFileName.trim()) {
+      setError("Please enter a valid file name.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/files/actions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, newName: newFileName.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Rename failed");
+      }
+
+      await refreshFiles();
+      setEditingFile(null);
+      setNewFileName("");
+    } catch (unknownError: unknown) {
+      const message =
+        unknownError instanceof Error
+          ? unknownError.message
+          : "Rename failed";
+      setError(message);
+    }
+  }
+
+  async function onDelete(fileId: string, fileName: string) {
+    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/files/actions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Delete failed");
+      }
+
+      await refreshFiles();
+    } catch (unknownError: unknown) {
+      const message =
+        unknownError instanceof Error
+          ? unknownError.message
+          : "Delete failed";
+      setError(message);
+    }
+  }
+
+  function cancelRename() {
+    setEditingFile(null);
+    setNewFileName("");
   }
 
   return (
@@ -164,23 +236,52 @@ export default function UploadAndList() {
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate mb-1 group-hover:text-blue-600 transition-colors duration-200">
-                      {f.name.replace(/\.[^/.]+$/, "")}
-                    </h3>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v0a2 2 0 002-2h6l2 2h6a2 2 0 012 2v1" />
-                        </svg>
-                        {(f.size / 1024).toFixed(1)} KB
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {new Date(f.modifiedAt).toLocaleDateString()}
-                      </span>
-                    </div>
+                    {editingFile === f.id ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={newFileName}
+                          onChange={(e) => setNewFileName(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter new file name"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveRename(f.id)}
+                            className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelRename}
+                            className="px-3 py-1.5 text-xs bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-semibold text-gray-900 truncate mb-1 group-hover:text-blue-600 transition-colors duration-200">
+                          {f.name.replace(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}_/, "").replace(/\.[^/.]+$/, "")}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v0a2 2 0 002-2h6l2 2h6a2 2 0 012 2v1" />
+                            </svg>
+                            {(f.size / 1024).toFixed(1)} KB
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {new Date(f.uploadedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 
@@ -195,15 +296,37 @@ export default function UploadAndList() {
                     </svg>
                     View
                   </Link>
+                  
+                  <button
+                    onClick={() => onRename(f.id, f.name)}
+                    className="inline-flex items-center justify-center p-2.5 rounded-xl bg-yellow-100 text-yellow-700 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-300 transition-all duration-200 transform hover:scale-105"
+                    title="Rename file"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+
                   <a
                     href={f.url}
                     download
-                    className="inline-flex items-center justify-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 transform hover:scale-105"
+                    className="inline-flex items-center justify-center p-2.5 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 transform hover:scale-105"
+                    title="Download file"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </a>
+
+                  <button
+                    onClick={() => onDelete(f.id, f.name)}
+                    className="inline-flex items-center justify-center p-2.5 rounded-xl bg-red-100 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-300 transition-all duration-200 transform hover:scale-105"
+                    title="Delete file"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
