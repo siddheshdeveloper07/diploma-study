@@ -41,5 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # uploaded files (stored in Google Cloud Storage in production)
+# Note: PDF and DOCX files are tracked by Git LFS
 /public/uploads/*
 !/public/uploads/.gitkeep
+!/public/uploads/*.pdf
+!/public/uploads/*.docx
