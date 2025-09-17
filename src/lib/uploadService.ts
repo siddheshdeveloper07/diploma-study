@@ -7,7 +7,8 @@ import path from 'path';
 // Initialize Google Cloud Storage
 const storage = new Storage({
   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  // In Cloud Run, we don't need keyFilename - it uses the default service account
+  // keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 });
 
 const bucketName = process.env.GCS_BUCKET_NAME || 'diplomastudy-files';

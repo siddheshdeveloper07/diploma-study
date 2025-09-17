@@ -21,13 +21,14 @@ steps:
     args: [
       'run', 'deploy', 'diplomastudy',
       '--image', 'gcr.io/$PROJECT_ID/diplomastudy:$COMMIT_SHA',
-      '--region', 'us-central1',
+      '--region', 'europe-west1',
       '--platform', 'managed',
       '--allow-unauthenticated',
       '--port', '3000',
       '--memory', '1Gi',
       '--cpu', '1',
       '--max-instances', '10',
+      '--service-account', 'diplomastudy@$PROJECT_ID.iam.gserviceaccount.com',
       '--set-env-vars', 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GOOGLE_CLOUD_PROJECT_ID=$PROJECT_ID,GCS_BUCKET_NAME=diplomastudy-files'
     ]
 
