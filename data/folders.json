@@ -1,0 +1,58 @@
+[
+  {
+    "id": "folder_1758182574814_fh1ya8i4w",
+    "name": "Mathematics",
+    "createdAt": "2025-09-18T08:02:54.814Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#3B82F6"
+  },
+  {
+    "id": "folder_1758182585133_tsqadnbmd",
+    "name": "Physics",
+    "createdAt": "2025-09-18T08:03:05.133Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#3B82F6"
+  },
+  {
+    "id": "folder_1758182596677_5ikb84g4v",
+    "name": "Chemistry",
+    "createdAt": "2025-09-18T08:03:16.677Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#8B5CF6"
+  },
+  {
+    "id": "folder_1758182607486_ssknof8p4",
+    "name": "Question Sets",
+    "createdAt": "2025-09-18T08:03:27.486Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#EF4444"
+  },
+  {
+    "id": "folder_1758182623423_wxaqnnlci",
+    "name": "English",
+    "createdAt": "2025-09-18T08:03:43.423Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#F59E0B"
+  },
+  {
+    "id": "folder_1758182633090_h9gmkmyvr",
+    "name": "Computer",
+    "createdAt": "2025-09-18T08:03:53.090Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#F97316"
+  },
+  {
+    "id": "folder_1758182646607_fs75pqmwf",
+    "name": "Syllabus",
+    "createdAt": "2025-09-18T08:04:06.607Z",
+    "parentId": null,
+    "type": "folder",
+    "color": "#F97316"
+  }
+]

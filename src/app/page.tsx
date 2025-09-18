@@ -1,4 +1,4 @@
-import UploadAndList from "./components/UploadAndList";
+import FileManager from "./components/FileManager";
 import HeroSection from "./components/HeroSection";
 
 export default function Home() {
@@ -82,7 +82,7 @@ export default function Home() {
         </div>
         
         <div className="rounded-3xl border border-gray-200/50 bg-white/80 backdrop-blur-md p-8 shadow-2xl shadow-blue-500/10">
-          <UploadAndList />
+          <FileManager />
         </div>
       </main>
       

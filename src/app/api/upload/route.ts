@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
     const customName = formData.get("customName") as string | undefined;
+    const folderId = formData.get("folderId") as string | undefined;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       arrayBuffer: () => fileData.arrayBuffer(),
     } as File;
 
-    const fileMetadata = await UploadService.uploadFile(fileObject, customName);
+    const fileMetadata = await UploadService.uploadFile(fileObject, customName, folderId || null);
 
     return NextResponse.json({ 
       message: "Uploaded successfully", 

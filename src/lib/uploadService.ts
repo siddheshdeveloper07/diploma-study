@@ -1,6 +1,8 @@
 import { Storage } from '@google-cloud/storage';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { FileItem } from '@/types/fileSystem';
+import { FileMetadataService } from './fileMetadataService';
 
 // Google Cloud Storage is used for file storage
 
@@ -21,6 +23,7 @@ export interface FileMetadata {
   uploadedAt: string;
   url: string;
   gcsName?: string; // For Google Cloud Storage
+  folderId?: string | null; // Added folder support
 }
 
 export class UploadService {
@@ -31,7 +34,7 @@ export class UploadService {
     );
   }
 
-  static async uploadFile(file: File, customName?: string): Promise<FileMetadata> {
+  static async uploadFile(file: File, customName?: string, folderId?: string | null): Promise<FileMetadata> {
     const timestamp = new Date()
       .toISOString()
       .replace(/[:.]/g, "-")
@@ -51,19 +54,34 @@ export class UploadService {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    let fileMetadata: FileMetadata;
     if (this.isGCSConfigured()) {
       // Upload to Google Cloud Storage
-      return this.uploadToGCS(buffer, nameWithTimestamp, originalName);
+      fileMetadata = await this.uploadToGCS(buffer, nameWithTimestamp, originalName, folderId);
     } else {
       // Fallback to local storage
-      return this.uploadToLocal(buffer, nameWithTimestamp, originalName);
+      fileMetadata = await this.uploadToLocal(buffer, nameWithTimestamp, originalName, folderId);
     }
+
+    // Save folder association in metadata
+    if (folderId !== undefined && folderId !== null) {
+      const success = await FileMetadataService.updateFileFolder(fileMetadata.id, folderId);
+      if (success) {
+        fileMetadata.folderId = folderId;
+        console.log(`File ${fileMetadata.name} uploaded to folder ${folderId}`);
+      } else {
+        console.error(`Failed to associate file ${fileMetadata.name} with folder ${folderId}`);
+      }
+    }
+
+    return fileMetadata;
   }
 
   private static async uploadToGCS(
     buffer: Buffer,
     fileName: string,
-    originalName: string
+    originalName: string,
+    folderId?: string | null
   ): Promise<FileMetadata> {
     try {
       const bucket = storage.bucket(bucketName);
@@ -91,6 +109,7 @@ export class UploadService {
         uploadedAt: new Date().toISOString(),
         url: publicUrl,
         gcsName: gcsFileName,
+        folderId: folderId || null,
       };
     } catch (error) {
       console.error('GCS upload error:', error);
@@ -101,7 +120,8 @@ export class UploadService {
   private static async uploadToLocal(
     buffer: Buffer,
     fileName: string,
-    originalName: string
+    originalName: string,
+    folderId?: string | null
   ): Promise<FileMetadata> {
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
     await fs.mkdir(uploadsDir, { recursive: true });
@@ -116,15 +136,35 @@ export class UploadService {
       size: buffer.length,
       uploadedAt: new Date().toISOString(),
       url: `/uploads/${encodeURIComponent(fileName)}`,
+      folderId: folderId || null,
     };
   }
 
-  static async getFilesList(): Promise<FileMetadata[]> {
+  static async getFilesList(folderId?: string | null): Promise<FileMetadata[]> {
+    let files: FileMetadata[];
+    
     if (this.isGCSConfigured()) {
-      return this.getGCSFiles();
+      files = await this.getGCSFiles();
     } else {
-      return this.getLocalFiles();
+      files = await this.getLocalFiles();
     }
+
+    // Get file-folder associations
+    const fileMetadata = await FileMetadataService.getAllFileMetadata();
+    
+    // Update files with their folder associations
+    files.forEach(file => {
+      if (fileMetadata[file.id] !== undefined) {
+        file.folderId = fileMetadata[file.id];
+      }
+    });
+
+    // Filter by folder if specified
+    if (folderId !== undefined) {
+      files = files.filter(file => file.folderId === folderId);
+    }
+
+    return files.sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1));
   }
 
   private static async getGCSFiles(): Promise<FileMetadata[]> {
@@ -151,6 +191,7 @@ export class UploadService {
             uploadedAt: metadata.timeCreated || new Date().toISOString(),
             url: publicUrl,
             gcsName: file.name,
+            folderId: null, // Default to root for existing files
           });
         }
       }
@@ -181,6 +222,7 @@ export class UploadService {
             size: stat.size,
             uploadedAt: stat.mtime.toISOString(),
             url: `/api/uploads/${encodeURIComponent(name)}`,
+            folderId: null, // Default to root for existing files
           };
         })
       );
@@ -281,6 +323,47 @@ export class UploadService {
       return true;
     } catch (error) {
       console.error('Error deleting local file:', error);
+      return false;
+    }
+  }
+
+  // File movement operations
+  static async moveFile(fileId: string, newFolderId: string | null): Promise<boolean> {
+    if (this.isGCSConfigured()) {
+      return this.moveGCSFile(fileId, newFolderId);
+    } else {
+      return this.moveLocalFile(fileId, newFolderId);
+    }
+  }
+
+  private static async moveGCSFile(gcsName: string, newFolderId: string | null): Promise<boolean> {
+    try {
+      // Update the file-folder association in metadata
+      const success = await FileMetadataService.updateFileFolder(gcsName, newFolderId);
+      if (success) {
+        console.log(`Successfully moved GCS file ${gcsName} to folder ${newFolderId}`);
+      }
+      return success;
+    } catch (error) {
+      console.error('Error moving GCS file:', error);
+      return false;
+    }
+  }
+
+  private static async moveLocalFile(fileName: string, newFolderId: string | null): Promise<boolean> {
+    try {
+      console.log(`Moving local file ${fileName} to folder ${newFolderId}`);
+      
+      // Update the file-folder association in metadata
+      const success = await FileMetadataService.updateFileFolder(fileName, newFolderId);
+      if (success) {
+        console.log(`Successfully moved local file ${fileName} to folder ${newFolderId}`);
+      } else {
+        console.error(`Failed to move local file ${fileName} to folder ${newFolderId}`);
+      }
+      return success;
+    } catch (error) {
+      console.error('Error moving local file:', error);
       return false;
     }
   }
