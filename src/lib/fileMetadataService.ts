@@ -67,7 +67,7 @@ export class FileMetadataService {
           const [data] = await metadataFile.download();
           metadata = JSON.parse(data.toString());
         }
-      } catch (error) {
+      } catch (_error) {
         console.log('Creating new file metadata');
       }
 
@@ -144,7 +144,7 @@ export class FileMetadataService {
       try {
         const data = await fs.readFile(metadataPath, 'utf-8');
         metadata = JSON.parse(data);
-      } catch (error) {
+      } catch (_error) {
         console.log('Creating new file metadata');
       }
 
@@ -177,7 +177,7 @@ export class FileMetadataService {
         
         const record = metadata.find(m => m.fileId === fileId);
         return record ? record.folderId : null;
-      } catch (error) {
+      } catch (_error) {
         return null;
       }
     } catch (error) {
@@ -200,7 +200,7 @@ export class FileMetadataService {
         });
         
         return result;
-      } catch (error) {
+      } catch (_error) {
         return {};
       }
     } catch (error) {
@@ -254,7 +254,7 @@ export class FileMetadataService {
         );
 
         await fs.writeFile(metadataPath, JSON.stringify(cleanedMetadata, null, 2));
-      } catch (error) {
+      } catch (_error) {
         // File doesn't exist, nothing to clean
       }
     } catch (error) {

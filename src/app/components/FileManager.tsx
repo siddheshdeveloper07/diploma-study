@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { FileItem, FolderItem, BreadcrumbItem } from "@/types/fileSystem";
 
@@ -25,11 +25,7 @@ export default function FileManager() {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [showBulkMoveDialog, setShowBulkMoveDialog] = useState(false);
 
-  async function refreshContent() {
-    await Promise.all([refreshFiles(), refreshFolders(), loadAllFolders()]);
-  }
-
-  async function loadAllFolders() {
+  const loadAllFolders = useCallback(async () => {
     try {
       const res = await fetch('/api/folders?parentId=all', { cache: "no-store" });
       if (res.ok) {
@@ -39,9 +35,9 @@ export default function FileManager() {
     } catch (error) {
       console.error('Error loading all folders:', error);
     }
-  }
+  }, []);
 
-  async function refreshFiles() {
+  const refreshFiles = useCallback(async () => {
     try {
       const res = await fetch(`/api/files?folderId=${currentFolderId || ''}`, { cache: "no-store" });
       if (!res.ok) {
@@ -50,12 +46,13 @@ export default function FileManager() {
       }
       const data = await res.json();
       setFiles(data.files || []);
-    } catch (error) {
+    } catch (err) {
+      console.error('Error loading files:', err);
       setError("Failed to load files");
     }
-  }
+  }, [currentFolderId]);
 
-  async function refreshFolders() {
+  const refreshFolders = useCallback(async () => {
     try {
       const res = await fetch(`/api/folders?parentId=${currentFolderId || ''}`, { cache: "no-store" });
       if (!res.ok) {
@@ -64,14 +61,19 @@ export default function FileManager() {
       }
       const data = await res.json();
       setFolders(data.folders || []);
-    } catch (error) {
+    } catch (err) {
+      console.error('Error loading folders:', err);
       setError("Failed to load folders");
     }
-  }
+  }, [currentFolderId]);
+
+  const refreshContent = useCallback(async () => {
+    await Promise.all([refreshFiles(), refreshFolders(), loadAllFolders()]);
+  }, [refreshFiles, refreshFolders, loadAllFolders]);
 
   useEffect(() => {
     refreshContent();
-  }, [currentFolderId]);
+  }, [currentFolderId, refreshContent]);
 
   async function onUpload(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
@@ -592,9 +594,9 @@ export default function FileManager() {
               <div className="text-sm text-blue-800">
                 <p className="font-medium mb-1">📁 Organize your existing PDFs:</p>
                 <ul className="text-xs space-y-1 text-blue-700">
-                  <li>• <strong>Drag & Drop:</strong> Drag files directly onto folders</li>
+                  <li>• <strong>Drag &amp; Drop:</strong> Drag files directly onto folders</li>
                   <li>• <strong>Move Button:</strong> Click the green move icon on any file</li>
-                  <li>• <strong>Create Folders:</strong> Use "New Folder" to organize by subject</li>
+                  <li>• <strong>Create Folders:</strong> Use &quot;New Folder&quot; to organize by subject</li>
                 </ul>
               </div>
             </div>
@@ -957,7 +959,7 @@ export default function FileManager() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-hidden flex flex-col">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Move "{itemToMove.name}" to folder
+              Move &quot;{itemToMove.name}&quot; to folder
             </h3>
             
             <div className="flex-1 overflow-y-auto space-y-2 mb-4">

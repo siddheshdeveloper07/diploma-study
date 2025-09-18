@@ -1,7 +1,7 @@
 import { Storage } from '@google-cloud/storage';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { FileItem, FolderItem, FolderStats } from '@/types/fileSystem';
+import { FolderItem, FolderStats } from '@/types/fileSystem';
 
 // Initialize Google Cloud Storage
 const storage = new Storage({
@@ -85,7 +85,7 @@ export class FolderService {
           const [data] = await foldersFile.download();
           folders = JSON.parse(data.toString());
         }
-      } catch (error) {
+      } catch (_error) {
         console.log('Creating new folders file');
       }
 
@@ -196,7 +196,7 @@ export class FolderService {
       try {
         const data = await fs.readFile(foldersFile, 'utf-8');
         folders = JSON.parse(data);
-      } catch (error) {
+      } catch (_error) {
         console.log('Creating new folders file');
       }
 
@@ -216,7 +216,7 @@ export class FolderService {
         const data = await fs.readFile(foldersFile, 'utf-8');
         const folders: FolderItem[] = JSON.parse(data);
         return folders.filter(folder => folder.parentId === parentId);
-      } catch (error) {
+      } catch (_error) {
         return [];
       }
     } catch (error) {
@@ -338,7 +338,7 @@ export class FolderService {
       try {
         const data = await fs.readFile(foldersFile, 'utf-8');
         return JSON.parse(data);
-      } catch (error) {
+      } catch (_error) {
         return [];
       }
     } catch (error) {

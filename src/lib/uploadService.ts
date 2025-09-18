@@ -1,7 +1,6 @@
 import { Storage } from '@google-cloud/storage';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { FileItem } from '@/types/fileSystem';
 import { FileMetadataService } from './fileMetadataService';
 
 // Google Cloud Storage is used for file storage
