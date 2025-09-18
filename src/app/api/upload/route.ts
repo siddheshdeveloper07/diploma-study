@@ -7,19 +7,29 @@ export async function POST(request: Request) {
     const file = formData.get("file");
     const customName = formData.get("customName") as string | undefined;
 
-    if (!file || !(file instanceof File)) {
+    if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const originalName = file.name || "upload.pdf";
-    const isPdfByMime = (file as File).type === "application/pdf";
+    // Convert FormData file to a File-like object
+    const fileData = file as any;
+    const originalName = fileData.name || "upload.pdf";
+    const fileType = fileData.type || "application/pdf";
+    const isPdfByMime = fileType === "application/pdf";
     const isPdfByExt = originalName.toLowerCase().endsWith(".pdf");
 
     if (!isPdfByMime && !isPdfByExt) {
       return NextResponse.json({ error: "Only PDF files are allowed" }, { status: 400 });
     }
 
-    const fileMetadata = await UploadService.uploadFile(file as File, customName);
+    // Create a File-like object for the upload service
+    const fileObject = {
+      name: originalName,
+      type: fileType,
+      arrayBuffer: () => fileData.arrayBuffer(),
+    } as File;
+
+    const fileMetadata = await UploadService.uploadFile(fileObject, customName);
 
     return NextResponse.json({ 
       message: "Uploaded successfully", 
