@@ -37,7 +37,7 @@ export async function GET(
           contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         }
         
-        return new NextResponse(fileBuffer, {
+        return new NextResponse(fileBuffer as BodyInit, {
           headers: {
             'Content-Type': contentType,
             'Content-Disposition': `inline; filename="${fileName}"`,
