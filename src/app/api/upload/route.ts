@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     // Convert FormData file to a File-like object
-    const fileData = file as any;
+    const fileData = file as { name?: string; type?: string; arrayBuffer: () => Promise<ArrayBuffer> };
     const originalName = fileData.name || "upload.pdf";
     const fileType = fileData.type || "application/pdf";
     const isPdfByMime = fileType === "application/pdf";
